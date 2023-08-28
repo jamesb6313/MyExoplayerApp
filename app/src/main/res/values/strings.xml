@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">MyExoplayerApp</string>
+
+    <string name="player_activity_name">Media player</string>
+    <string name="media_url_mp3">https://storage.googleapis.com/exoplayer-test-media-0/Jazz_In_Paris.mp3</string>
+    <!-- Big Buck Bunny video provided by the Blender Foundation.
+    (c) copyright 2008, Blender Foundation / www.bigbuckbunny.org -->
+    <string name="media_url_mp4">https://storage.googleapis.com/exoplayer-test-media-0/BigBuckBunny_320x180.mp4</string>
+    <string name="media_url_dash"><![CDATA[https://www.youtube.com/api/manifest/dash/id/bf5bb2419360daf1/source/youtube?as=fmp4_audio_clear,fmp4_sd_hd_clear&sparams=ip,ipbits,expire,source,id,as&ip=0.0.0.0&ipbits=0&expire=19000000000&signature=51AF5F39AB0CEC3E5497CD9C900EBFEAECCCB5C7.8506521BFC350652163895D4C26DEE124209AA9E&key=ik0]]></string>
+    <string name="logo">Google logo</string>
+
+    <string name="permissions_required">Permission required to access Music Folder</string>
+    <string name="ok">Okay</string>
+
+    <string name="exo_controls_shuffle_on_description">Shuffle Songs ON</string>
+    <string name="exo_controls_shuffle_off_description">Shuffle Songs OFF</string>
+    <string name="current_playlist_name">Current playlist</string>
+    <string name="open_player_content_description">Click to view your play list</string>
+    <string name="added_media_item_format">Added %1$s to playlist</string>
+    <string name="shuffle">Shuffle</string>
+    <string name="repeat">Repeat</string>
+    <string name="play_button">Play</string>
+    <string name="no_item_prompt">
+    "! No media in the play list !\nPlease try to add more from browser"
+  </string>
+    <string name="notification_content_title">Playback cannot be resumed</string>
+    <string name="notification_content_text">Press on the play button on the media notification if it
+    is still present, otherwise please open the app to start the playback and re-connect the session
+    to the controller</string>
+    <string name="notification_channel_name">Playback cannot be resumed</string>
+</resources>
