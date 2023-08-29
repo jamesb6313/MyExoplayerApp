@@ -30,7 +30,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
 
-private const val TAG = "PlayerActivity"
+private const val TAG = "PlaybackService"
 @androidx.media3.common.util.UnstableApi
 class PlaybackService : MediaSessionService() {
 
@@ -224,6 +224,7 @@ class PlaybackService : MediaSessionService() {
             release()
             mediaSession = null
         }
+        Log.i(TAG, "Media Service has been Destroyed - OnDestroy()")
         super.onDestroy()
     }
 }

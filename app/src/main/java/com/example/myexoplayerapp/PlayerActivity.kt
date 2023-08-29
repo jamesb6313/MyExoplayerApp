@@ -6,6 +6,7 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.ComponentName
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
@@ -19,8 +20,10 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.media3.common.C.TRACK_TYPE_TEXT
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import androidx.media3.common.util.Util
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -64,19 +67,6 @@ class PlayerActivity : AppCompatActivity() {
         ActivityPlayerBinding.inflate(layoutInflater)
     }
 
-//    private fun playbackStateListener() = object : Player.Listener {
-//        override fun onPlaybackStateChanged(playbackState: Int) {
-//            val stateString: String = when (playbackState) {
-//                ExoPlayer.STATE_IDLE -> "ExoPlayer.STATE_IDLE      -"
-//                ExoPlayer.STATE_BUFFERING -> "ExoPlayer.STATE_BUFFERING -"
-//                ExoPlayer.STATE_READY -> "ExoPlayer.STATE_READY     -"
-//                ExoPlayer.STATE_ENDED -> "ExoPlayer.STATE_ENDED     -"
-//                else -> "UNKNOWN_STATE             -"
-//            }
-//            Log.d(TAG, "changed state to $stateString")
-//        }
-//    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(viewBinding.root)
@@ -113,7 +103,7 @@ class PlayerActivity : AppCompatActivity() {
             if (isGranted) {
                 // Permission is granted. Continue the action or workflow in your
                 // app.
-                Log.i("Permission: ", "Granted")
+                Log.i(TAG, "Permission is granted")
                 loadAudio()
             } else {
                 // Explain to the user that the feature is unavailable because the
@@ -121,7 +111,7 @@ class PlayerActivity : AppCompatActivity() {
                 // same time, respect the user's decision. Don't link to system
                 // settings in an effort to convince the user to change their
                 // decision.
-                Log.i("Permission: ", "Denied - Cannot access Music Folder")
+                Log.i(TAG, "Permission is denied - Cannot access Music Folder")
                 myShowErrorDlg(getString(R.string.permissions_required))
             }
         }
@@ -312,19 +302,30 @@ class PlayerActivity : AppCompatActivity() {
 
 //        updateCurrentPlaylistUI()
 //        updateMediaMetadataUI(controller.mediaMetadata)
-//        playerView.setShowSubtitleButton(controller.currentTracks.isTypeSupported(TRACK_TYPE_TEXT))
+        playerView.setShowSubtitleButton(controller.currentTracks.isTypeSupported(TRACK_TYPE_TEXT))
 //
-//        controller.addListener(
-//            object : Player.Listener {
+        controller.addListener(
+            object : Player.Listener {
 //                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
 //                    updateMediaMetadataUI(mediaItem?.mediaMetadata ?: MediaMetadata.EMPTY)
 //                }
-//
-//                override fun onTracksChanged(tracks: Tracks) {
-//                    playerView.setShowSubtitleButton(tracks.isTypeSupported(TRACK_TYPE_TEXT))
-//                }
-//            }
-//        )
+
+                override fun onTracksChanged(tracks: Tracks) {
+                    playerView.setShowSubtitleButton(tracks.isTypeSupported(TRACK_TYPE_TEXT))
+                    Log.i(TAG, "new controller - PlayerListener")
+                }
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    val stateString: String = when (playbackState) {
+                        Player.STATE_IDLE -> "ExoPlayer.STATE_IDLE      -"
+                        Player.STATE_BUFFERING -> "ExoPlayer.STATE_BUFFERING -"
+                        Player.STATE_READY -> "ExoPlayer.STATE_READY     -"
+                        Player.STATE_ENDED -> "ExoPlayer.STATE_ENDED     -"
+                        else -> "UNKNOWN_STATE             -"
+                    }
+                    Log.i(TAG, "changed state to $stateString")
+                }
+            }
+        )
     }
 
 
@@ -347,6 +348,7 @@ class PlayerActivity : AppCompatActivity() {
         hideSystemUi()
         if (Util.SDK_INT <= 23 ) {
             initializeController()
+            Log.i(TAG,"Activity onResume() controller re-initialize")
         }
     }
 
@@ -361,9 +363,14 @@ class PlayerActivity : AppCompatActivity() {
     @androidx.media3.common.util.UnstableApi
     public override fun onPause() {
         super.onPause()
-//        if (Util.SDK_INT <= 23) {
-//            //releasePlayer()
-//        }
+        if (Util.SDK_INT <= 23) {
+            //releasePlayer()
+            //TODO test with next 2 lines - would need to be SDK <= 23
+            releaseController()
+            MediaController.releaseFuture(controllerFuture)
+
+            Log.i(TAG,"Activity onPause() - release controller,  SDK <= 23")
+        }
     }
 
     @androidx.media3.common.util.UnstableApi
@@ -373,12 +380,20 @@ class PlayerActivity : AppCompatActivity() {
             //releasePlayer()
             releaseController()
             MediaController.releaseFuture(controllerFuture)
+
+            Log.i(TAG,"Activity onStop() - release controller")
         }
     }
+    @androidx.media3.common.util.UnstableApi
+    public override fun onDestroy() {
+        stopService(Intent(this@PlayerActivity, PlaybackService::class.java))
+        Log.i(TAG,"Activity onDestroy()")
+        super.onDestroy()
+    }
 
-    private var playWhenReady = true
-    private var mediaItemIndex = 0
-    private var playbackPosition = 0L
+//    private var playWhenReady = true
+//    private var mediaItemIndex = 0
+//    private var playbackPosition = 0L
 
 //    private fun releasePlayer() {
 //        player?.let { exoPlayer ->
