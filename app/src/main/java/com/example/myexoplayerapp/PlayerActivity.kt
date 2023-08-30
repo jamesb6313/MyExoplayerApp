@@ -39,27 +39,27 @@ import com.google.common.util.concurrent.MoreExecutors
 var audioList: ArrayList<AudioSongs>? = null
 private const val TAG = "PlayerActivity"
 class PlayerActivity : AppCompatActivity() {
-    private lateinit var controllerFuture: ListenableFuture<androidx.media3.session.MediaController>
-    private val controller: androidx.media3.session.MediaController?
+    private lateinit var controllerFuture: ListenableFuture<MediaController>
+    private val controller: MediaController?
         get() = if (controllerFuture.isDone) controllerFuture.get() else null
 
     private lateinit var playerView: PlayerView
     //private var player: ExoPlayer? = null
-    private val MY_PERMISSIONS_READ_STORAGE = 42
+    //private val MY_PERMISSIONS_READ_STORAGE = 42
     private var myMsgResult = false
-    var serviceBound = false
-    var initialSongIndex = 0
-    val Broadcast_PLAY_NEW_AUDIO = "com.example.audio2023.PlayNewAudio"
+    //var serviceBound = false
+    //var initialSongIndex = 0
+    //val Broadcast_PLAY_NEW_AUDIO = "com.example.audio2023.PlayNewAudio"
     private lateinit var sessionToken : SessionToken
 
 
-    companion object {
-        var PERMISSIONS = arrayOf(
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.FOREGROUND_SERVICE,
-            Manifest.permission.READ_MEDIA_AUDIO
-        )
-    }
+//    companion object {
+//        var PERMISSIONS = arrayOf(
+//            Manifest.permission.READ_EXTERNAL_STORAGE,
+//            Manifest.permission.FOREGROUND_SERVICE,
+//            Manifest.permission.READ_MEDIA_AUDIO
+//        )
+//    }
 
     //private val playbackStateListener: Player.Listener = playbackStateListener()
 
@@ -183,7 +183,7 @@ class PlayerActivity : AppCompatActivity() {
                 val artist =
                     cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST))
 
-                Log.i("SONG data = ", data)     // example data string :"/storage/emulated/0/Music/JonAndVangelis.mp3"
+                Log.i("SONG data = ", data)     // example data string :"/storage/emulated/0/Music/**.mp3"
                 // Save to audioList
                 audioList!!.add(AudioSongs(data, title, album, artist))
             }
@@ -202,7 +202,7 @@ class PlayerActivity : AppCompatActivity() {
         val dialogBuilder = AlertDialog.Builder(this)
 
         // set message of alert dialog
-        dialogBuilder.setMessage("errMsg")
+        dialogBuilder.setMessage(errMsg)
             // if the dialog is cancelable
             .setCancelable(false)
             // positive button text and action
@@ -249,34 +249,13 @@ class PlayerActivity : AppCompatActivity() {
     private fun initializeMediaList() {    //(songs : ArrayList<AudioSongs>) {
         val sList : MutableList<MediaItem> = ArrayList()
 
-        for ((cnt, song) in audioList!!.withIndex())
+        for ((cnt, _) in audioList!!.withIndex())
         {
             val fs = audioList?.get(cnt)
             val fsUri = Uri.parse(fs?.data)
 
-            if (sList != null) {
-                sList.add(MediaItem.fromUri(fsUri))
-            }
+            sList.add(MediaItem.fromUri(fsUri))
         }
-
-
-//        player = ExoPlayer.Builder(this)
-//            .build()
-//            .also { exoPlayer ->
-//                viewBinding.videoView.player = exoPlayer
-//                //val mediaItem = MediaItem.fromUri(fsUri)
-//
-//                //val mediaItem = MediaItem.fromUri(getString(R.string.media_url_mp4))
-//                //val secondMediaItem = MediaItem.fromUri(getString(R.string.media_url_mp3))
-//                //exoPlayer.setMediaItem(mediaItem)
-//
-//                exoPlayer.setMediaItems(sList, mediaItemIndex, playbackPosition)
-//                //exoPlayer.setMediaItems()
-//
-//                exoPlayer.playWhenReady = playWhenReady
-//                exoPlayer.addListener(playbackStateListener)
-//                exoPlayer.prepare()
-//            }
     }
 
     @androidx.media3.common.util.UnstableApi
@@ -370,6 +349,9 @@ class PlayerActivity : AppCompatActivity() {
             MediaController.releaseFuture(controllerFuture)
 
             Log.i(TAG,"Activity onPause() - release controller,  SDK <= 23")
+        }
+        if (isFinishing) {
+            Log.i(TAG,"Activity onPause() - isFinishing == true")
         }
     }
 

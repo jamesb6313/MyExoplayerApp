@@ -1,53 +1,45 @@
 package com.example.myexoplayerapp
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.PendingIntent.FLAG_IMMUTABLE
 import android.app.PendingIntent.FLAG_UPDATE_CURRENT
-import android.app.PendingIntent.getActivity
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Binder
-import android.os.Build
 import android.os.Bundle
-import android.os.IBinder
 import android.util.Log
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.TaskStackBuilder
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
 import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
+import kotlin.system.exitProcess
 
 private const val TAG = "PlaybackService"
 @androidx.media3.common.util.UnstableApi
 class PlaybackService : MediaSessionService() {
 
     private lateinit var player: ExoPlayer
-    private lateinit var mediaSessionService : MediaSessionService
+    //private lateinit var mediaSessionService : MediaSessionService
     private lateinit var customCommands: List<CommandButton>
 
     companion object {
-        private const val SEARCH_QUERY_PREFIX_COMPAT = "androidx://media3-session/playFromSearch"
-        private const val SEARCH_QUERY_PREFIX = "androidx://media3-session/setMediaUri"
+        //private const val SEARCH_QUERY_PREFIX_COMPAT = "androidx://media3-session/playFromSearch"
+        //private const val SEARCH_QUERY_PREFIX = "androidx://media3-session/setMediaUri"
         private const val CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_ON =
             "android.media3.session.demo.SHUFFLE_ON"
         private const val CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_OFF =
             "android.media3.session.demo.SHUFFLE_OFF"
         private const val NOTIFICATION_ID = 123
         private const val CHANNEL_ID = "demo_session_notification_channel_id"
-        private val immutableFlag = FLAG_IMMUTABLE
+        private const val immutableFlag = FLAG_IMMUTABLE
     }
 
     private var mediaSession: MediaSession? = null
@@ -58,7 +50,7 @@ class PlaybackService : MediaSessionService() {
 
     // Create
     // Binder given to clients
-    private val iBinder: IBinder = LocalBinder()
+    //private val iBinder: IBinder = LocalBinder()
 
     // Create your Player and MediaSession in the onCreate lifecycle event
     @androidx.media3.common.util.UnstableApi
@@ -129,23 +121,12 @@ class PlaybackService : MediaSessionService() {
         }
     }
 
-    private var playWhenReady = true
+    //private var playWhenReady = true
     private var mediaItemIndex = 0
     private var playbackPosition = 0L
 //    private val playbackStateListener: Player.Listener = playbackStateListener()
 
-//    private fun playbackStateListener() = object : Player.Listener {
-//        override fun onPlaybackStateChanged(playbackState: Int) {
-//            val stateString: String = when (playbackState) {
-//                ExoPlayer.STATE_IDLE -> "ExoPlayer.STATE_IDLE      -"
-//                ExoPlayer.STATE_BUFFERING -> "ExoPlayer.STATE_BUFFERING -"
-//                ExoPlayer.STATE_READY -> "ExoPlayer.STATE_READY     -"
-//                ExoPlayer.STATE_ENDED -> "ExoPlayer.STATE_ENDED     -"
-//                else -> "UNKNOWN_STATE             -"
-//            }
-//            Log.d(TAG, "changed state to $stateString")
-//        }
-//    }
+
 
     private fun initializeSessionAndPlayer() {    //(songs : ArrayList<AudioSongs>) {
         val sList : MutableList<MediaItem> = ArrayList()
@@ -180,14 +161,14 @@ class PlaybackService : MediaSessionService() {
         mediaSession = MediaSession.Builder(this, player).build()
     }
 
-    private fun getSingleTopActivity(): PendingIntent {
-        return getActivity(
-            this,
-            0,
-            Intent(this, PlayerActivity::class.java),
-            immutableFlag or FLAG_UPDATE_CURRENT
-        )
-    }
+//    private fun getSingleTopActivity(): PendingIntent {
+//        return getActivity(
+//            this,
+//            0,
+//            Intent(this, PlayerActivity::class.java),
+//            immutableFlag or FLAG_UPDATE_CURRENT
+//        )
+//    }
 
 //    private fun getBackStackedActivity(): PendingIntent {
 //        return TaskStackBuilder.create(this).run {
@@ -211,9 +192,15 @@ class PlaybackService : MediaSessionService() {
             .build()
     }
 
-    inner class LocalBinder : Binder() {
-        val service: PlaybackService
-            get() = this@PlaybackService
+//    inner class LocalBinder : Binder() {
+//        val service: PlaybackService
+//            get() = this@PlaybackService
+//    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        stopSelf()
+        Log.i(TAG, "Service - onTaskRemoved() , called stopSelf()")
+        super.onTaskRemoved(rootIntent)
     }
 
     // Remember to release the player and media session in onDestroy
@@ -224,7 +211,11 @@ class PlaybackService : MediaSessionService() {
             release()
             mediaSession = null
         }
-        Log.i(TAG, "Media Service has been Destroyed - OnDestroy()")
+        Log.i(TAG, "Media Service has been Destroyed - OnDestroy(). Call to exitProcess() will be made")
+
         super.onDestroy()
+        //finishAffinity()
+        Log.i(TAG, "OnDestroy() call to exitProcess(-1) will be made")
+        exitProcess(-1)
     }
 }
