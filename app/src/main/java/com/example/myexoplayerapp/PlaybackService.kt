@@ -216,6 +216,6 @@ class PlaybackService : MediaSessionService() {
         super.onDestroy()
         //finishAffinity()
         Log.i(TAG, "OnDestroy() call to exitProcess(-1) will be made")
-        exitProcess(-1)
+        //exitProcess(-1)
     }
 }

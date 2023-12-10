@@ -29,9 +29,17 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import androidx.media3.ui.PlayerView
 import com.example.myexoplayerapp.databinding.ActivityPlayerBinding
+import com.google.android.material.snackbar.Snackbar
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 
+import com.example.myexoplayerapp.util.checkPermission
+import com.example.myexoplayerapp.util.requestAllPermissions
+import com.example.myexoplayerapp.util.shouldRequestPermissionRationale
+import com.example.myexoplayerapp.util.showSnackbar
+
+//import kotlinx.android.synthetic.main.activity_player.container
+//import kotlinx.android.synthetic.main.activity_player.buttonDownloadFile
 
 /**
  * A fullscreen activity to play audio or video streams.
@@ -53,13 +61,17 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var sessionToken : SessionToken
 
 
-//    companion object {
-//        var PERMISSIONS = arrayOf(
-//            Manifest.permission.READ_EXTERNAL_STORAGE,
-//            Manifest.permission.FOREGROUND_SERVICE,
-//            Manifest.permission.READ_MEDIA_AUDIO
-//        )
-//    }
+/*    companion object {
+        var PERMISSIONS = arrayOf(
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.FOREGROUND_SERVICE,
+            Manifest.permission.READ_MEDIA_AUDIO
+        )
+    }*/
+companion object {
+    const val PERMISSION_REQUEST_STORAGE = 0
+}
+    private val permissions = arrayOf(Manifest.permission.READ_MEDIA_AUDIO)
 
     //private val playbackStateListener: Player.Listener = playbackStateListener()
 
@@ -88,66 +100,112 @@ class PlayerActivity : AppCompatActivity() {
 //        }
         audioList = ArrayList<AudioSongs>()
 
-        requestPermission()
+        //requestPermission()
+        // Check if the storage permission has been granted
+        if (checkPermission(Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            // Permission is already granted
+            startDownloading()
+        } else {
+            //Requested permission.
+            // Permission has not been granted and must be requested.
+            requestStoragePermission()
+        }
     }
-
-    //**********************
-// Register the permissions callback, which handles the user's response to the
-    // system permissions dialog. Save the return value, an instance of
-    // ActivityResultLauncher. You can use either a val, as shown in this snippet,
-    // or a lateinit var in your onAttach() or onCreate() method.
-    private val requestPermissionLauncher =
-        registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { isGranted: Boolean ->
-            if (isGranted) {
-                // Permission is granted. Continue the action or workflow in your
-                // app.
-                Log.i(TAG, "Permission is granted")
-                loadAudio()
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PERMISSION_REQUEST_STORAGE) {
+            // Request for camera permission.
+            if (grantResults.size == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startDownloading()
             } else {
-                // Explain to the user that the feature is unavailable because the
-                // feature requires a permission that the user has denied. At the
-                // same time, respect the user's decision. Don't link to system
-                // settings in an effort to convince the user to change their
-                // decision.
-                Log.i(TAG, "Permission is denied - Cannot access Music Folder")
-                myShowErrorDlg(getString(R.string.permissions_required))
+                // Permission request was denied.
+                viewBinding.container.showSnackbar(R.string.storage_permission_denied, Snackbar.LENGTH_SHORT)
             }
-        }
-
-    private fun requestPermission() {
-        when {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                // You can use the API that requires the permission.
-                Toast.makeText(this@PlayerActivity, "Permission was Granted", Toast.LENGTH_LONG).show()
-
-                loadAudio()
-            }
-
-            ActivityCompat.shouldShowRequestPermissionRationale(
-                this,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) -> {
-                //Additional rationale should be displayed
-
-                Toast.makeText(this@PlayerActivity, "Permission require", Toast.LENGTH_LONG).show()
-//                    myShowErrorDlg(getString(R.string.permissions_required))
-//                    if (myMsgResult) {
-//                        // Permission has not been asked yet
-//                        requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE) //Ask permission
-//                    }
-            } else -> {
-            //Toast.makeText(this@MainActivity, "Ask for Permission", Toast.LENGTH_SHORT).show()
-            // Permission has not been asked yet
-            requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE) //Ask permission
-
-        }
         }
     }
+    private fun requestStoragePermission() {
+        // Permission has not been granted and must be requested.
+        if (shouldRequestPermissionRationale(Manifest.permission.READ_MEDIA_AUDIO)) {
+            // Provide an additional rationale to the user if the permission was not granted
+            viewBinding.container.showSnackbar(
+                R.string.storage_access_required,
+                Snackbar.LENGTH_INDEFINITE, R.string.ok
+            ) {
+                requestAllPermissions(permissions, PERMISSION_REQUEST_STORAGE)
+            }
+        } else {
+            // Request the permission with array.
+            requestAllPermissions(permissions, PERMISSION_REQUEST_STORAGE)
+        }
+    }
+
+    private fun startDownloading() {
+        // do download stuff here
+        loadAudio()
+        viewBinding.container.showSnackbar(R.string.loadingAudio, Snackbar.LENGTH_LONG)
+    }
+
+//    //**********************
+//// Register the permissions callback, which handles the user's response to the
+//    // system permissions dialog. Save the return value, an instance of
+//    // ActivityResultLauncher. You can use either a val, as shown in this snippet,
+//    // or a lateinit var in your onAttach() or onCreate() method.
+//    private val requestPermissionLauncher =
+//        registerForActivityResult(
+//            ActivityResultContracts.RequestPermission()
+//        ) { isGranted: Boolean ->
+//            if (isGranted) {
+//                // Permission is granted. Continue the action or workflow in your
+//                // app.
+//                Log.i(TAG, "Permission is granted")
+//                loadAudio()
+//            } else {
+//                // Explain to the user that the feature is unavailable because the
+//                // feature requires a permission that the user has denied. At the
+//                // same time, respect the user's decision. Don't link to system
+//                // settings in an effort to convince the user to change their
+//                // decision.
+//                Log.i(TAG, "Permission is denied - Cannot access Music Folder")
+//                myShowErrorDlg(getString(R.string.permissions_required))
+//            }
+//        }
+//
+//    private fun requestPermission() {
+//        when {
+//            ContextCompat.checkSelfPermission(
+//                this,
+//                Manifest.permission.READ_EXTERNAL_STORAGE
+//            ) == PackageManager.PERMISSION_GRANTED -> {
+//                // You can use the API that requires the permission.
+//                Toast.makeText(this@PlayerActivity, "Permission was Granted", Toast.LENGTH_LONG).show()
+//
+//                loadAudio()
+//            }
+//
+//            ActivityCompat.shouldShowRequestPermissionRationale(
+//                this,
+//                Manifest.permission.READ_EXTERNAL_STORAGE
+//            ) -> {
+//                //Additional rationale should be displayed
+//
+//                Toast.makeText(this@PlayerActivity, "Permission require", Toast.LENGTH_LONG).show()
+////                    myShowErrorDlg(getString(R.string.permissions_required))
+////                    if (myMsgResult) {
+////                        // Permission has not been asked yet
+//                        requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE) //Ask permission
+////                    }
+//            } else -> {
+//                //Toast.makeText(this@MainActivity, "Ask for Permission", Toast.LENGTH_SHORT).show()
+//                // Permission has not been asked yet
+//                requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE) //Ask permission
+//
+//            }
+//        }
+//    }
     //
 
     @SuppressLint("Range")
