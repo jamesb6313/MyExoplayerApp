@@ -9,14 +9,11 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -71,7 +68,11 @@ class PlayerActivity : AppCompatActivity() {
 companion object {
     const val PERMISSION_REQUEST_STORAGE = 0
 }
-    private val permissions = arrayOf(Manifest.permission.READ_MEDIA_AUDIO)
+    private val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        arrayOf(Manifest.permission.READ_MEDIA_AUDIO)
+    } else {
+        TODO("VERSION.SDK_INT < TIRAMISU")
+    }
 
     //private val playbackStateListener: Player.Listener = playbackStateListener()
 
@@ -98,7 +99,7 @@ companion object {
 //                }
 //            }
 //        }
-        audioList = ArrayList<AudioSongs>()
+        audioList = ArrayList()
 
         //requestPermission()
         // Check if the storage permission has been granted
@@ -255,7 +256,7 @@ companion object {
         return songCount
     }
 
-    fun myShowErrorDlg(errMsg: String) {
+    private fun myShowErrorDlg(errMsg: String) {
         // build alert dialog
         val dialogBuilder = AlertDialog.Builder(this)
 
@@ -285,7 +286,7 @@ companion object {
 
     //loadAudio
     //////////////////////////////////////////////////////////
-    fun loadAudio() {
+    private fun loadAudio() {
         try {
             myNewGetAudioFileCount()
         } catch (e: Exception) {

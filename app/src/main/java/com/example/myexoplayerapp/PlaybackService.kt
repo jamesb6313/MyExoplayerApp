@@ -20,7 +20,6 @@ import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
-import kotlin.system.exitProcess
 
 private const val TAG = "PlaybackService"
 @androidx.media3.common.util.UnstableApi
