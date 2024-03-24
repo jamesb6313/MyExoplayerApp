@@ -197,6 +197,11 @@ class PlaybackService : MediaSessionService() {
 //    }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
+        mediaSession?.run {
+            player.release()
+            release()
+            mediaSession = null
+        }
         stopSelf()
         Log.i(TAG, "Service - onTaskRemoved() , called stopSelf()")
         super.onTaskRemoved(rootIntent)
@@ -205,16 +210,16 @@ class PlaybackService : MediaSessionService() {
     // Remember to release the player and media session in onDestroy
     override fun onDestroy() {
 
-        mediaSession?.run {
-            player.release()
-            release()
-            mediaSession = null
-        }
-        Log.i(TAG, "Media Service has been Destroyed - OnDestroy(). Call to exitProcess() will be made")
+//        mediaSession?.run {
+//            player.release()
+//            release()
+//            mediaSession = null
+//        }
+        Log.i(TAG, "Media Service has been Destroyed - OnDestroy(). commented out call to exitProcess().")
 
         super.onDestroy()
         //finishAffinity()
-        Log.i(TAG, "OnDestroy() call to exitProcess(-1) will be made")
+        //Log.i(TAG, "OnDestroy() call to exitProcess(-1) will be made")
         //exitProcess(-1)
     }
 }
