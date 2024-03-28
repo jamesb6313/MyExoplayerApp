@@ -52,7 +52,7 @@ class PlayerActivity : AppCompatActivity() {
     //private var player: ExoPlayer? = null
     //private val MY_PERMISSIONS_READ_STORAGE = 42
     private var myMsgResult = false
-    //var serviceBound = false
+    var serviceBound = false
     //var initialSongIndex = 0
     //val Broadcast_PLAY_NEW_AUDIO = "com.example.audio2023.PlayNewAudio"
     private lateinit var sessionToken : SessionToken
@@ -65,13 +65,14 @@ class PlayerActivity : AppCompatActivity() {
             Manifest.permission.READ_MEDIA_AUDIO
         )
     }*/
-companion object {
-    const val PERMISSION_REQUEST_STORAGE = 0
-}
+    companion object {
+        const val PERMISSION_REQUEST_STORAGE = 0
+    }
+
     private val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        arrayOf(Manifest.permission.READ_MEDIA_AUDIO)
-    } else {
-        TODO("VERSION.SDK_INT < TIRAMISU")
+            arrayOf(Manifest.permission.READ_MEDIA_AUDIO)
+        } else {
+            TODO("VERSION.SDK_INT < TIRAMISU")
     }
 
     //private val playbackStateListener: Player.Listener = playbackStateListener()

@@ -7,7 +7,9 @@ import android.app.PendingIntent.FLAG_IMMUTABLE
 import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.content.Intent
 import android.net.Uri
+import android.os.Binder
 import android.os.Bundle
+import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -20,6 +22,7 @@ import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
+import kotlin.system.exitProcess
 
 private const val TAG = "PlaybackService"
 @androidx.media3.common.util.UnstableApi
@@ -38,7 +41,7 @@ class PlaybackService : MediaSessionService() {
             "android.media3.session.demo.SHUFFLE_OFF"
         private const val NOTIFICATION_ID = 123
         private const val CHANNEL_ID = "demo_session_notification_channel_id"
-        private const val immutableFlag = FLAG_IMMUTABLE
+        private const val IMMUTABLE_FLAG = FLAG_IMMUTABLE
     }
 
     private var mediaSession: MediaSession? = null
@@ -49,7 +52,7 @@ class PlaybackService : MediaSessionService() {
 
     // Create
     // Binder given to clients
-    //private val iBinder: IBinder = LocalBinder()
+    private val iBinder: IBinder = LocalBinder()
 
     // Create your Player and MediaSession in the onCreate lifecycle event
     @androidx.media3.common.util.UnstableApi
@@ -90,7 +93,7 @@ class PlaybackService : MediaSessionService() {
             val pendingIntent =
                 TaskStackBuilder.create(this@PlaybackService).run {
                     addNextIntent(Intent(this@PlaybackService, PlayerActivity::class.java))
-                    getPendingIntent(0, immutableFlag or FLAG_UPDATE_CURRENT)
+                    getPendingIntent(0, IMMUTABLE_FLAG or FLAG_UPDATE_CURRENT)
                 }
             val builder =
                 NotificationCompat.Builder(this@PlaybackService, CHANNEL_ID)
@@ -191,35 +194,43 @@ class PlaybackService : MediaSessionService() {
             .build()
     }
 
-//    inner class LocalBinder : Binder() {
-//        val service: PlaybackService
-//            get() = this@PlaybackService
-//    }
+    inner class LocalBinder : Binder() {
+        val service: PlaybackService
+            get() = this@PlaybackService
+    }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        mediaSession?.run {
-            player.release()
-            release()
-            mediaSession = null
+
+        try {
+            mediaSession?.run {
+                player.release()
+                release()
+                mediaSession = null
+            }
+            Log.i(TAG, "onTaskRemoved() Media Service has been released.")
+        } finally {
+            super.onTaskRemoved(rootIntent)
         }
-        stopSelf()
-        Log.i(TAG, "Service - onTaskRemoved() , called stopSelf()")
-        super.onTaskRemoved(rootIntent)
     }
 
     // Remember to release the player and media session in onDestroy
     override fun onDestroy() {
 
-//        mediaSession?.run {
-//            player.release()
-//            release()
-//            mediaSession = null
-//        }
-        Log.i(TAG, "Media Service has been Destroyed - OnDestroy(). commented out call to exitProcess().")
+        try {
+            //mediaSession?.run {
+            //    player.release()
+            //    release()
+            //    mediaSession = null
+            //}
 
-        super.onDestroy()
-        //finishAffinity()
-        //Log.i(TAG, "OnDestroy() call to exitProcess(-1) will be made")
-        //exitProcess(-1)
+            stopSelf()
+            Log.i(TAG, "OnDestroy() call stopSelf()")
+        } finally {
+
+            //finishAffinity()
+            super.onDestroy()
+            Log.i(TAG, "OnDestroy() call to exitProcess(-1) will be made")
+            exitProcess(-1)
+        }
     }
 }
