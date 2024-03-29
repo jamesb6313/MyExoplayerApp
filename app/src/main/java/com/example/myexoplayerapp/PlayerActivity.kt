@@ -35,9 +35,6 @@ import com.example.myexoplayerapp.util.requestAllPermissions
 import com.example.myexoplayerapp.util.shouldRequestPermissionRationale
 import com.example.myexoplayerapp.util.showSnackbar
 
-//import kotlinx.android.synthetic.main.activity_player.container
-//import kotlinx.android.synthetic.main.activity_player.buttonDownloadFile
-
 /**
  * A fullscreen activity to play audio or video streams.
  */
@@ -49,22 +46,9 @@ class PlayerActivity : AppCompatActivity() {
         get() = if (controllerFuture.isDone) controllerFuture.get() else null
 
     private lateinit var playerView: PlayerView
-    //private var player: ExoPlayer? = null
-    //private val MY_PERMISSIONS_READ_STORAGE = 42
     private var myMsgResult = false
-    var serviceBound = false
-    //var initialSongIndex = 0
-    //val Broadcast_PLAY_NEW_AUDIO = "com.example.audio2023.PlayNewAudio"
     private lateinit var sessionToken : SessionToken
 
-
-/*    companion object {
-        var PERMISSIONS = arrayOf(
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.FOREGROUND_SERVICE,
-            Manifest.permission.READ_MEDIA_AUDIO
-        )
-    }*/
     companion object {
         const val PERMISSION_REQUEST_STORAGE = 0
     }
@@ -75,8 +59,6 @@ class PlayerActivity : AppCompatActivity() {
             TODO("VERSION.SDK_INT < TIRAMISU")
     }
 
-    //private val playbackStateListener: Player.Listener = playbackStateListener()
-
     private val viewBinding by lazy(LazyThreadSafetyMode.NONE) {
         ActivityPlayerBinding.inflate(layoutInflater)
     }
@@ -86,20 +68,7 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(viewBinding.root)
 
         playerView = viewBinding.videoView
-//        playerView.setOnClickListener { _ ->
-//            run {
-//                val controller = this.controller ?: return@run
-//                if (controller.currentMediaItemIndex == position) {
-//                    controller.playWhenReady = !controller.playWhenReady
-//                    if (controller.playWhenReady) {
-//                        playerView.hideController()
-//                    }
-//                } else {
-//                    controller.seekToDefaultPosition(/* mediaItemIndex= */ position)
-//                    mediaItemListAdapter.notifyDataSetChanged()
-//                }
-//            }
-//        }
+
         audioList = ArrayList()
 
         //requestPermission()
@@ -113,6 +82,7 @@ class PlayerActivity : AppCompatActivity() {
             requestStoragePermission()
         }
     }
+
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -129,6 +99,7 @@ class PlayerActivity : AppCompatActivity() {
             }
         }
     }
+
     private fun requestStoragePermission() {
         // Permission has not been granted and must be requested.
         if (shouldRequestPermissionRationale(Manifest.permission.READ_MEDIA_AUDIO)) {
@@ -150,65 +121,6 @@ class PlayerActivity : AppCompatActivity() {
         loadAudio()
         viewBinding.container.showSnackbar(R.string.loadingAudio, Snackbar.LENGTH_LONG)
     }
-
-//    //**********************
-//// Register the permissions callback, which handles the user's response to the
-//    // system permissions dialog. Save the return value, an instance of
-//    // ActivityResultLauncher. You can use either a val, as shown in this snippet,
-//    // or a lateinit var in your onAttach() or onCreate() method.
-//    private val requestPermissionLauncher =
-//        registerForActivityResult(
-//            ActivityResultContracts.RequestPermission()
-//        ) { isGranted: Boolean ->
-//            if (isGranted) {
-//                // Permission is granted. Continue the action or workflow in your
-//                // app.
-//                Log.i(TAG, "Permission is granted")
-//                loadAudio()
-//            } else {
-//                // Explain to the user that the feature is unavailable because the
-//                // feature requires a permission that the user has denied. At the
-//                // same time, respect the user's decision. Don't link to system
-//                // settings in an effort to convince the user to change their
-//                // decision.
-//                Log.i(TAG, "Permission is denied - Cannot access Music Folder")
-//                myShowErrorDlg(getString(R.string.permissions_required))
-//            }
-//        }
-//
-//    private fun requestPermission() {
-//        when {
-//            ContextCompat.checkSelfPermission(
-//                this,
-//                Manifest.permission.READ_EXTERNAL_STORAGE
-//            ) == PackageManager.PERMISSION_GRANTED -> {
-//                // You can use the API that requires the permission.
-//                Toast.makeText(this@PlayerActivity, "Permission was Granted", Toast.LENGTH_LONG).show()
-//
-//                loadAudio()
-//            }
-//
-//            ActivityCompat.shouldShowRequestPermissionRationale(
-//                this,
-//                Manifest.permission.READ_EXTERNAL_STORAGE
-//            ) -> {
-//                //Additional rationale should be displayed
-//
-//                Toast.makeText(this@PlayerActivity, "Permission require", Toast.LENGTH_LONG).show()
-////                    myShowErrorDlg(getString(R.string.permissions_required))
-////                    if (myMsgResult) {
-////                        // Permission has not been asked yet
-//                        requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE) //Ask permission
-////                    }
-//            } else -> {
-//                //Toast.makeText(this@MainActivity, "Ask for Permission", Toast.LENGTH_SHORT).show()
-//                // Permission has not been asked yet
-//                requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE) //Ask permission
-//
-//            }
-//        }
-//    }
-    //
 
     @SuppressLint("Range")
     fun myNewGetAudioFileCount(): Int {
@@ -285,26 +197,14 @@ class PlayerActivity : AppCompatActivity() {
         alert.show()
     }
 
-    //loadAudio
-    //////////////////////////////////////////////////////////
     private fun loadAudio() {
         try {
             myNewGetAudioFileCount()
         } catch (e: Exception) {
             myShowErrorDlg("Error = " + e.message)
-// Cannot use Toast in catch stmt - Toast.makeText(this, " Error = " + e.message, Toast.LENGTH_SHORT).show()
+            // Cannot use Toast in catch stmt - Toast.makeText(this, " Error = " + e.message, Toast.LENGTH_SHORT).show()
         }
     }
-
-    //***********************
-
-// See: https://stackoverflow.com/questions/47046321/exoplayer-not-playing-local-file-on-local-storage?rq=3
-//    @androidx.media3.common.util.UnstableApi
-//    private fun buildMediaSource(uri: Uri): MediaSource? {
-//        val mediaItem = MediaItem.fromUri(uri)
-//        return ProgressiveMediaSource.Factory(DefaultDataSource.Factory(context))
-//            .createMediaSource(mediaItem)
-//    }
 
     private fun initializeMediaList() {    //(songs : ArrayList<AudioSongs>) {
         val sList : MutableList<MediaItem> = ArrayList()
@@ -339,16 +239,10 @@ class PlayerActivity : AppCompatActivity() {
 
         playerView.player = controller
 
-//        updateCurrentPlaylistUI()
-//        updateMediaMetadataUI(controller.mediaMetadata)
         playerView.setShowSubtitleButton(controller.currentTracks.isTypeSupported(TRACK_TYPE_TEXT))
-//
+
         controller.addListener(
             object : Player.Listener {
-//                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-//                    updateMediaMetadataUI(mediaItem?.mediaMetadata ?: MediaMetadata.EMPTY)
-//                }
-
                 override fun onTracksChanged(tracks: Tracks) {
                     playerView.setShowSubtitleButton(tracks.isTypeSupported(TRACK_TYPE_TEXT))
                     Log.i(TAG, "new controller - PlayerListener")
@@ -367,6 +261,14 @@ class PlayerActivity : AppCompatActivity() {
         )
     }
 
+    @SuppressLint("InlinedApi")
+    private fun hideSystemUi() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, viewBinding.videoView).let { controller ->
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+    }
 
     @androidx.media3.common.util.UnstableApi
     public override fun  onStart() {
@@ -391,14 +293,6 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    @SuppressLint("InlinedApi")
-    private fun hideSystemUi() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        WindowInsetsControllerCompat(window, viewBinding.videoView).let { controller ->
-            controller.hide(WindowInsetsCompat.Type.systemBars())
-            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
-    }
     @androidx.media3.common.util.UnstableApi
     public override fun onPause() {
         super.onPause()
@@ -426,27 +320,11 @@ class PlayerActivity : AppCompatActivity() {
             Log.i(TAG,"Activity onStop() - release controller")
         }
     }
+
     @androidx.media3.common.util.UnstableApi
     public override fun onDestroy() {
         stopService(Intent(this@PlayerActivity, PlaybackService::class.java))
         Log.i(TAG,"Activity onDestroy()")
         super.onDestroy()
     }
-
-//    private var playWhenReady = true
-//    private var mediaItemIndex = 0
-//    private var playbackPosition = 0L
-
-//    private fun releasePlayer() {
-//        player?.let { exoPlayer ->
-//            playbackPosition = exoPlayer.currentPosition
-//            mediaItemIndex = exoPlayer.currentMediaItemIndex
-//            playWhenReady = exoPlayer.playWhenReady
-//            exoPlayer.removeListener(playbackStateListener)
-//            exoPlayer.release()
-//        }
-//        player = null
-//    }
-
-
 }

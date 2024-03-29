@@ -29,12 +29,15 @@ private const val TAG = "PlaybackService"
 class PlaybackService : MediaSessionService() {
 
     private lateinit var player: ExoPlayer
-    //private lateinit var mediaSessionService : MediaSessionService
     private lateinit var customCommands: List<CommandButton>
+    private var mediaItemIndex = 0
+    private var playbackPosition = 0L
+
+    // Create
+    // Binder given to clients
+    private val iBinder: IBinder = LocalBinder()
 
     companion object {
-        //private const val SEARCH_QUERY_PREFIX_COMPAT = "androidx://media3-session/playFromSearch"
-        //private const val SEARCH_QUERY_PREFIX = "androidx://media3-session/setMediaUri"
         private const val CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_ON =
             "android.media3.session.demo.SHUFFLE_ON"
         private const val CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_OFF =
@@ -49,10 +52,6 @@ class PlaybackService : MediaSessionService() {
     // If desired, validate the controller before returning the media session
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
         mediaSession
-
-    // Create
-    // Binder given to clients
-    private val iBinder: IBinder = LocalBinder()
 
     // Create your Player and MediaSession in the onCreate lifecycle event
     @androidx.media3.common.util.UnstableApi
@@ -105,30 +104,9 @@ class PlaybackService : MediaSessionService() {
                     )
                     .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                     .setAutoCancel(true)
-//            if (ActivityCompat.checkSelfPermission(
-//                    this,
-//                    Manifest.permission.POST_NOTIFICATIONS
-//                ) != PackageManager.PERMISSION_GRANTED
-//            ) {
-//                // TODO: Consider calling
-//                //    ActivityCompat#requestPermissions
-//                // here to request the missing permissions, and then overriding
-//                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-//                //                                          int[] grantResults)
-//                // to handle the case where the user grants the permission. See the documentation
-//                // for ActivityCompat#requestPermissions for more details.
-//                return
-//            }
             notificationManagerCompat.notify(NOTIFICATION_ID, builder.build())
         }
     }
-
-    //private var playWhenReady = true
-    private var mediaItemIndex = 0
-    private var playbackPosition = 0L
-//    private val playbackStateListener: Player.Listener = playbackStateListener()
-
-
 
     private fun initializeSessionAndPlayer() {    //(songs : ArrayList<AudioSongs>) {
         val sList : MutableList<MediaItem> = ArrayList()
@@ -146,39 +124,10 @@ class PlaybackService : MediaSessionService() {
             .setAudioAttributes(AudioAttributes.DEFAULT, /* handleAudioFocus */ true)
             .build()
             .also { exoPlayer ->
-//                viewBinding.videoView.player = exoPlayer
-//                //val mediaItem = MediaItem.fromUri(fsUri)
-//
-//                //val mediaItem = MediaItem.fromUri(getString(R.string.media_url_mp4))
-//                //val secondMediaItem = MediaItem.fromUri(getString(R.string.media_url_mp3))
-//                //exoPlayer.setMediaItem(mediaItem)
-//
                 exoPlayer.setMediaItems(sList, mediaItemIndex, playbackPosition)
-//                //exoPlayer.setMediaItems()
-//
-//                exoPlayer.playWhenReady = playWhenReady
-//                exoPlayer.addListener(playbackStateListener)
-//                exoPlayer.prepare()
             }
         mediaSession = MediaSession.Builder(this, player).build()
     }
-
-//    private fun getSingleTopActivity(): PendingIntent {
-//        return getActivity(
-//            this,
-//            0,
-//            Intent(this, PlayerActivity::class.java),
-//            immutableFlag or FLAG_UPDATE_CURRENT
-//        )
-//    }
-
-//    private fun getBackStackedActivity(): PendingIntent {
-//        return TaskStackBuilder.create(this).run {
-//            addNextIntent(Intent(this@PlaybackService, MainActivity::class.java))
-//            addNextIntent(Intent(this@PlaybackService, PlayerActivity::class.java))
-//            getPendingIntent(0, immutableFlag or FLAG_UPDATE_CURRENT)
-//        }
-//    }
 
     private fun getShuffleCommandButton(sessionCommand: SessionCommand): CommandButton {
         val isOn = sessionCommand.customAction == CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_ON
@@ -190,7 +139,6 @@ class PlaybackService : MediaSessionService() {
                 )
             )
             .setSessionCommand(sessionCommand)
-            //.setIconResId(if (isOn) R.drawable.exo_icon_shuffle_off else R.drawable.exo_icon_shuffle_on)
             .build()
     }
 
@@ -217,17 +165,10 @@ class PlaybackService : MediaSessionService() {
     override fun onDestroy() {
 
         try {
-            //mediaSession?.run {
-            //    player.release()
-            //    release()
-            //    mediaSession = null
-            //}
-
             stopSelf()
             Log.i(TAG, "OnDestroy() call stopSelf()")
         } finally {
 
-            //finishAffinity()
             super.onDestroy()
             Log.i(TAG, "OnDestroy() call to exitProcess(-1) will be made")
             exitProcess(-1)
