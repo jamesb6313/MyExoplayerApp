@@ -358,9 +358,9 @@ private const val TAG = "PlayerActivity"
     @androidx.media3.common.util.UnstableApi
     public override fun onDestroy() {
         //stopService(Intent(this@PlayerActivity, PlaybackService::class.java))
-        PlaybackService.stop(this)
         Log.i(TAG,"Activity onDestroy()")
         writeLogCat(this@PlayerActivity)
+        PlaybackService.stop(this)
 
         super.onDestroy()
     }
