@@ -5,12 +5,16 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.ComponentName
+import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Binder
 import android.os.Build
 import android.os.Bundle
+import android.os.IBinder
 import android.provider.MediaStore
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
@@ -21,6 +25,7 @@ import androidx.media3.common.C.TRACK_TYPE_TEXT
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.Tracks
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -34,13 +39,14 @@ import com.example.myexoplayerapp.util.checkPermission
 import com.example.myexoplayerapp.util.requestAllPermissions
 import com.example.myexoplayerapp.util.shouldRequestPermissionRationale
 import com.example.myexoplayerapp.util.showSnackbar
+import com.example.myexoplayerapp.util.LogDump.Companion.writeLogCat
 
 /**
  * A fullscreen activity to play audio or video streams.
  */
 var audioList: ArrayList<AudioSongs>? = null
 private const val TAG = "PlayerActivity"
-class PlayerActivity : AppCompatActivity() {
+@UnstableApi class PlayerActivity : AppCompatActivity() {
     private lateinit var controllerFuture: ListenableFuture<MediaController>
     private val controller: MediaController?
         get() = if (controllerFuture.isDone) controllerFuture.get() else null
@@ -48,6 +54,8 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var playerView: PlayerView
     private var myMsgResult = false
     private lateinit var sessionToken : SessionToken
+    private lateinit var mService : PlaybackService
+    private var mBound : Boolean = false
 
     companion object {
         const val PERMISSION_REQUEST_STORAGE = 0
@@ -63,10 +71,26 @@ class PlayerActivity : AppCompatActivity() {
         ActivityPlayerBinding.inflate(layoutInflater)
     }
 
+    /** Defines callbacks for service binding, passed to bindService().  */
+    //SEE: https://developer.android.com/develop/background-work/services/bound-services#Basics
+//    private val connection = object : ServiceConnection {
+//
+//        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+//            // We've bound to LocalService, cast the IBinder and get LocalService instance.
+//            val binder = service as PlaybackService.LocalBinder
+//            mService = binder.getService()
+//            mBound = true
+//        }
+//
+//        override fun onServiceDisconnected(arg0: ComponentName) {
+//            mBound = false
+//        }
+//    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(viewBinding.root)
-
+        Log.i(TAG, "\n\nonCreate() - Start of session - Dump Logcat\n")
         playerView = viewBinding.videoView
 
         audioList = ArrayList()
@@ -81,6 +105,8 @@ class PlayerActivity : AppCompatActivity() {
             // Permission has not been granted and must be requested.
             requestStoragePermission()
         }
+
+        //PlaybackService.LocalBinder = bindService()
     }
 
     override fun onRequestPermissionsResult(
@@ -155,7 +181,7 @@ class PlayerActivity : AppCompatActivity() {
                 val artist =
                     cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST))
 
-                Log.i("SONG data = ", data)     // example data string :"/storage/emulated/0/Music/**.mp3"
+                //Log.i("SONG data = ", data)     // example data string :"/storage/emulated/0/Music/**.mp3"
                 // Save to audioList
                 audioList!!.add(AudioSongs(data, title, album, artist))
             }
@@ -245,7 +271,7 @@ class PlayerActivity : AppCompatActivity() {
             object : Player.Listener {
                 override fun onTracksChanged(tracks: Tracks) {
                     playerView.setShowSubtitleButton(tracks.isTypeSupported(TRACK_TYPE_TEXT))
-                    Log.i(TAG, "new controller - PlayerListener")
+                    Log.i(TAG, "Activity() - setController(), onTracksChanged() Player.Listener")
                 }
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     val stateString: String = when (playbackState) {
@@ -255,7 +281,7 @@ class PlayerActivity : AppCompatActivity() {
                         Player.STATE_ENDED -> "ExoPlayer.STATE_ENDED     -"
                         else -> "UNKNOWN_STATE             -"
                     }
-                    Log.i(TAG, "changed state to $stateString")
+                    Log.i(TAG, "Activity() - setController(), onPlaybackStateChanged() Player.Listener: changed state to $stateString")
                 }
             }
         )
@@ -273,11 +299,18 @@ class PlayerActivity : AppCompatActivity() {
     @androidx.media3.common.util.UnstableApi
     public override fun  onStart() {
         super.onStart()
+//        // Bind to PlaybackService
+//        Intent(this, PlaybackService::class.java).also { intent ->
+//            bindService(intent, connection, Context.BIND_AUTO_CREATE)
+//        }
+
         if (Util.SDK_INT > 23) {
             if (audioList != null && audioList!!.isNotEmpty()) {
                 initializeMediaList()
                 sessionToken = SessionToken(this,ComponentName(this, PlaybackService::class.java))
                 initializeController()
+
+                Log.i(TAG, "Activity() - onStart(), initializeMediaList(), create SessionToken & initializeController() if null audioList")
             }
 
         }
@@ -286,45 +319,49 @@ class PlayerActivity : AppCompatActivity() {
     @androidx.media3.common.util.UnstableApi
     public override fun onResume() {
         super.onResume()
-        hideSystemUi()
+        //hideSystemUi()
         if (Util.SDK_INT <= 23 ) {
             initializeController()
             Log.i(TAG,"Activity onResume() controller re-initialize")
         }
+        Log.i(TAG,"Activity onResume()  - just this log")
     }
 
     @androidx.media3.common.util.UnstableApi
     public override fun onPause() {
         super.onPause()
         if (Util.SDK_INT <= 23) {
-            //releasePlayer()
-            //TODO test with next 2 lines - would need to be SDK <= 23
             releaseController()
-            MediaController.releaseFuture(controllerFuture)
 
             Log.i(TAG,"Activity onPause() - release controller,  SDK <= 23")
         }
         if (isFinishing) {
             Log.i(TAG,"Activity onPause() - isFinishing == true")
         }
+        Log.i(TAG,"Activity onPause() - just this log")
     }
 
     @androidx.media3.common.util.UnstableApi
     public override fun onStop() {
         super.onStop()
-        if (Util.SDK_INT > 23) {
-            //releasePlayer()
-            releaseController()
-            MediaController.releaseFuture(controllerFuture)
 
-            Log.i(TAG,"Activity onStop() - release controller")
+//        unbindService(connection)
+//        mBound = false
+
+        if (Util.SDK_INT > 23) {
+            //releaseController()
+            //PlaybackService.stop(this)
+            Log.i(TAG,"Activity onStop() - releaseController() & MediaController.releaseFuture()")
         }
     }
 
     @androidx.media3.common.util.UnstableApi
     public override fun onDestroy() {
-        stopService(Intent(this@PlayerActivity, PlaybackService::class.java))
+        //stopService(Intent(this@PlayerActivity, PlaybackService::class.java))
+        PlaybackService.stop(this)
         Log.i(TAG,"Activity onDestroy()")
+        writeLogCat(this@PlayerActivity)
+
         super.onDestroy()
     }
 }

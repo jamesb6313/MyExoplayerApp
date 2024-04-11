@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!--  //SEE:https://guides.codepath.com/android/Sharing-Content-with-Intents
+        (using file Provider - create res/xml/fileprovider.xml , change AndroidManifest.xml) -->
+
+    <!-- See table below.  The external-files-path DOES NOT require external storage permissions. -->
+    <external-files-path
+        name="dump_txt"
+        path="DumpFiles" />
+
+    <!--Uncomment below to share the entire application specific directory -->
+    <!--<external-path name="all_dirs" path="."/>-->
+
+</paths>

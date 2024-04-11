@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent.FLAG_IMMUTABLE
 import android.app.PendingIntent.FLAG_UPDATE_CURRENT
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Binder
@@ -35,7 +36,7 @@ class PlaybackService : MediaSessionService() {
 
     // Create
     // Binder given to clients
-    private val iBinder: IBinder = LocalBinder()
+    //private val iBinder: IBinder = LocalBinder()
 
     companion object {
         private const val CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_ON =
@@ -45,6 +46,20 @@ class PlaybackService : MediaSessionService() {
         private const val NOTIFICATION_ID = 123
         private const val CHANNEL_ID = "demo_session_notification_channel_id"
         private const val IMMUTABLE_FLAG = FLAG_IMMUTABLE
+
+        private var running = false
+
+//        @JvmStatic
+//        fun start(context: Context) {
+//            Log.i(TAG, "PlaybackService companion object start()" )
+//            context.startService(Intent(context, PlaybackService::class.java))
+//        }
+
+        @JvmStatic
+        fun stop(context: Context) {
+            Log.i(TAG, "PlaybackService companion object stop()" )
+            context.stopService(Intent(context, PlaybackService::class.java))
+        }
     }
 
     private var mediaSession: MediaSession? = null
@@ -57,19 +72,22 @@ class PlaybackService : MediaSessionService() {
     @androidx.media3.common.util.UnstableApi
     override fun onCreate() {
         super.onCreate()
-        customCommands =
-            listOf(
-                getShuffleCommandButton(
-                    SessionCommand(CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_ON, Bundle.EMPTY)
-                ),
-                getShuffleCommandButton(
-                    SessionCommand(CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_OFF, Bundle.EMPTY)
-                )
-            )
+        //start(this)
+        running = true
+
+//        customCommands =
+//            listOf(
+//                getShuffleCommandButton(
+//                    SessionCommand(CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_ON, Bundle.EMPTY)
+//                ),
+//                getShuffleCommandButton(
+//                    SessionCommand(CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_OFF, Bundle.EMPTY)
+//                )
+//            )
         initializeSessionAndPlayer()
         setListener(serviceListener())
-
     }
+
     private fun ensureNotificationChannel(notificationManagerCompat: NotificationManagerCompat) {
         if (Util.SDK_INT < 26 || notificationManagerCompat.getNotificationChannel(CHANNEL_ID) != null) {
             return
@@ -129,22 +147,37 @@ class PlaybackService : MediaSessionService() {
         mediaSession = MediaSession.Builder(this, player).build()
     }
 
-    private fun getShuffleCommandButton(sessionCommand: SessionCommand): CommandButton {
-        val isOn = sessionCommand.customAction == CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_ON
-        return CommandButton.Builder()
-            .setDisplayName(
-                getString(
-                    if (isOn) R.string.exo_controls_shuffle_on_description
-                    else R.string.exo_controls_shuffle_off_description
-                )
-            )
-            .setSessionCommand(sessionCommand)
-            .build()
-    }
+//    private fun getShuffleCommandButton(sessionCommand: SessionCommand): CommandButton {
+//        val isOn = sessionCommand.customAction == CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_ON
+//        return CommandButton.Builder()
+//            .setDisplayName(
+//                getString(
+//                    if (isOn) R.string.exo_controls_shuffle_on_description
+//                    else R.string.exo_controls_shuffle_off_description
+//                )
+//            )
+//            .setSessionCommand(sessionCommand)
+//            .build()
+//    }
 
-    inner class LocalBinder : Binder() {
-        val service: PlaybackService
-            get() = this@PlaybackService
+//    inner class LocalBinder : Binder() {
+//        //val service: PlaybackService
+//        //    get() = this@PlaybackService
+//        fun getService(): PlaybackService = this@PlaybackService
+//    }
+
+//    override fun onBind(intent: Intent?): IBinder {
+//        super.onBind(intent)
+//        return iBinder
+//    }
+
+    // This seems to allow Service OnDestroy() only if onTaskedRemoved() is called - 3-29-2024
+    // which is what I want
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
+        //Service.startForeground(0, notification, FOREGROUND_SERVICE_TYPE)
+        Log.i(TAG, "onStartCommand() - return START_STICKY")
+        return START_STICKY
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
@@ -157,18 +190,27 @@ class PlaybackService : MediaSessionService() {
             }
             Log.i(TAG, "onTaskRemoved() Media Service has been released.")
         } finally {
+            stopSelf()
+            Log.i(TAG, "onTaskRemoved() call stopSelf()")
+
             super.onTaskRemoved(rootIntent)
+
+            // try exit in onDestroy() - might not even need it now with START_STICK
+//            Log.i(TAG, "onTaskRemoved() call to exitProcess(-1) will be made")
+//            exitProcess(-1)
+
         }
     }
 
-    // Remember to release the player and media session in onDestroy
+    // Remember to release the player and media session in onDestroy - does no get called
     override fun onDestroy() {
+        super.onDestroy()
+        running = false
+        stop(this)
 
         try {
-            stopSelf()
-            Log.i(TAG, "OnDestroy() call stopSelf()")
+            Log.i(TAG, "OnDestroy() - running = false")
         } finally {
-
             super.onDestroy()
             Log.i(TAG, "OnDestroy() call to exitProcess(-1) will be made")
             exitProcess(-1)
