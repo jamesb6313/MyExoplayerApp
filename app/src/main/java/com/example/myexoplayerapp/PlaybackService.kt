@@ -25,7 +25,7 @@ import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
 import kotlin.system.exitProcess
 
-private const val TAG = "PlaybackService"
+private const val TAG = "myInfo"
 @androidx.media3.common.util.UnstableApi
 class PlaybackService : MediaSessionService() {
 
@@ -39,10 +39,10 @@ class PlaybackService : MediaSessionService() {
     //private val iBinder: IBinder = LocalBinder()
 
     companion object {
-        private const val CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_ON =
-            "android.media3.session.demo.SHUFFLE_ON"
-        private const val CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_OFF =
-            "android.media3.session.demo.SHUFFLE_OFF"
+//        private const val CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_ON =
+//            "android.media3.session.demo.SHUFFLE_ON"
+//        private const val CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_OFF =
+//            "android.media3.session.demo.SHUFFLE_OFF"
         private const val NOTIFICATION_ID = 123
         private const val CHANNEL_ID = "demo_session_notification_channel_id"
         private const val IMMUTABLE_FLAG = FLAG_IMMUTABLE
@@ -69,7 +69,6 @@ class PlaybackService : MediaSessionService() {
         mediaSession
 
     // Create your Player and MediaSession in the onCreate lifecycle event
-    @androidx.media3.common.util.UnstableApi
     override fun onCreate() {
         super.onCreate()
         //start(this)
@@ -105,8 +104,11 @@ class PlaybackService : MediaSessionService() {
     private fun serviceListener() = object : Listener {
         @SuppressLint("MissingPermission")
         override fun onForegroundServiceStartNotAllowedException() {
+            Log.i(TAG,"In onForegroundServiceStartNotAllowedException() which calls TaskBuilder...")
             val notificationManagerCompat = NotificationManagerCompat.from(this@PlaybackService)
             ensureNotificationChannel(notificationManagerCompat)
+
+            //TODO - this looks like were some of my errors/crashes are occurring
             val pendingIntent =
                 TaskStackBuilder.create(this@PlaybackService).run {
                     addNextIntent(Intent(this@PlaybackService, PlayerActivity::class.java))

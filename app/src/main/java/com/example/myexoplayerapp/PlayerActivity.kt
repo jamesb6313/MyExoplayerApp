@@ -17,6 +17,8 @@ import android.os.Bundle
 import android.os.IBinder
 import android.provider.MediaStore
 import android.util.Log
+import android.window.OnBackInvokedDispatcher
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -45,7 +47,7 @@ import com.example.myexoplayerapp.util.LogDump.Companion.writeLogCat
  * A fullscreen activity to play audio or video streams.
  */
 var audioList: ArrayList<AudioSongs>? = null
-private const val TAG = "PlayerActivity"
+private const val TAG = "myInfo"
 @UnstableApi class PlayerActivity : AppCompatActivity() {
     private lateinit var controllerFuture: ListenableFuture<MediaController>
     private val controller: MediaController?
@@ -54,8 +56,8 @@ private const val TAG = "PlayerActivity"
     private lateinit var playerView: PlayerView
     private var myMsgResult = false
     private lateinit var sessionToken : SessionToken
-    private lateinit var mService : PlaybackService
-    private var mBound : Boolean = false
+//    private lateinit var mService : PlaybackService
+//    private var mBound : Boolean = false
 
     companion object {
         const val PERMISSION_REQUEST_STORAGE = 0
@@ -64,10 +66,12 @@ private const val TAG = "PlayerActivity"
     private val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             arrayOf(Manifest.permission.READ_MEDIA_AUDIO)
         } else {
+            Log.i(TAG,"permission value if < TIRAMISU not dealt with")
             TODO("VERSION.SDK_INT < TIRAMISU")
     }
 
     private val viewBinding by lazy(LazyThreadSafetyMode.NONE) {
+        Log.i(TAG,"viewBinding - lazy call layout inflater")
         ActivityPlayerBinding.inflate(layoutInflater)
     }
 
@@ -89,7 +93,7 @@ private const val TAG = "PlayerActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(viewBinding.root)
+        setContentView(viewBinding.container)       //changed from .root
         Log.i(TAG, "\n\nonCreate() - Start of session - Dump Logcat\n")
         playerView = viewBinding.videoView
 
@@ -105,8 +109,27 @@ private const val TAG = "PlayerActivity"
             // Permission has not been granted and must be requested.
             requestStoragePermission()
         }
-
         //PlaybackService.LocalBinder = bindService()
+
+        //SEE:https://stackoverflow.com/questions/72634225/onbackpressed-is-deprecated-what-is-the-alternative
+//        if (Build.VERSION.SDK_INT >= 33) {
+//            onBackInvokedDispatcher.registerOnBackInvokedCallback(
+//                OnBackInvokedDispatcher.PRIORITY_DEFAULT
+//            ) {
+//                exitOnBackPressed()
+//            }
+//        } else {
+//            onBackPressedDispatcher.addCallback(
+//                this,
+//                object : OnBackPressedCallback(true) {
+//                    override fun handleOnBackPressed() {
+//
+//                        Log.i(TAG, "handleOnBackPressed: Exit")
+//                        exitOnBackPressed()
+//                    }
+//                })
+//        }
+
     }
 
     override fun onRequestPermissionsResult(
@@ -144,6 +167,11 @@ private const val TAG = "PlayerActivity"
 
     private fun startDownloading() {
         // do download stuff here
+        if (audioList != null)
+            Log.i(TAG, "startDownLoading - loadAudio() called, audioList.count() = " + audioList!!.count())
+        else
+            Log.i(TAG, "startDownLoading - loadAudio() called, audioList == null")
+
         loadAudio()
         viewBinding.container.showSnackbar(R.string.loadingAudio, Snackbar.LENGTH_LONG)
     }
@@ -244,14 +272,13 @@ private const val TAG = "PlayerActivity"
         }
     }
 
-    @androidx.media3.common.util.UnstableApi
     private fun initializeController() {
         controllerFuture =
             MediaController.Builder(
                 this,
                 sessionToken
-            )
-                .buildAsync()
+            ).buildAsync()
+
         controllerFuture.addListener({ setController() }, MoreExecutors.directExecutor())
     }
 
@@ -259,13 +286,12 @@ private const val TAG = "PlayerActivity"
         MediaController.releaseFuture(controllerFuture)
     }
 
-    @androidx.media3.common.util.UnstableApi
     private fun setController() {
         val controller = this.controller ?: return
 
         playerView.player = controller
 
-        playerView.setShowSubtitleButton(controller.currentTracks.isTypeSupported(TRACK_TYPE_TEXT))
+        //playerView.setShowSubtitleButton(controller.currentTracks.isTypeSupported(TRACK_TYPE_TEXT))
 
         controller.addListener(
             object : Player.Listener {
@@ -296,7 +322,6 @@ private const val TAG = "PlayerActivity"
         }
     }
 
-    @androidx.media3.common.util.UnstableApi
     public override fun  onStart() {
         super.onStart()
 //        // Bind to PlaybackService
@@ -306,42 +331,59 @@ private const val TAG = "PlayerActivity"
 
         if (Util.SDK_INT > 23) {
             if (audioList != null && audioList!!.isNotEmpty()) {
-                initializeMediaList()
+                //initializeMediaList()
                 sessionToken = SessionToken(this,ComponentName(this, PlaybackService::class.java))
                 initializeController()
 
-                Log.i(TAG, "Activity() - onStart(), initializeMediaList(), create SessionToken & initializeController() if null audioList")
+                Log.i(TAG, "1 Activity() - onStart(), create SessionToken & initializeController()")
+            } else
+            {
+                if (audioList == null)
+                {
+                    audioList = ArrayList()
+                    Log.i(TAG, "2 Activity() - onStart() audioList == null, therefore recreate it")
+                }
+                if (audioList!!.isEmpty())
+                {
+                    initializeMediaList()
+                    sessionToken = SessionToken(this,ComponentName(this, PlaybackService::class.java))
+                    initializeController()
+
+                    Log.i(TAG, "3 Activity() - onStart(), initializeMediaList(), create SessionToken & initializeController()")
+                }
+
             }
 
         }
     }
 
-    @androidx.media3.common.util.UnstableApi
     public override fun onResume() {
         super.onResume()
         //hideSystemUi()
         if (Util.SDK_INT <= 23 ) {
+            sessionToken = SessionToken(this,ComponentName(this, PlaybackService::class.java))  //added
             initializeController()
+
             Log.i(TAG,"Activity onResume() controller re-initialize")
-        }
-        Log.i(TAG,"Activity onResume()  - just this log")
+        } else
+            Log.i(TAG,"Activity onResume() doing nothing if SDK_INT > 23")
     }
 
-    @androidx.media3.common.util.UnstableApi
     public override fun onPause() {
         super.onPause()
         if (Util.SDK_INT <= 23) {
             releaseController()
 
             Log.i(TAG,"Activity onPause() - release controller,  SDK <= 23")
-        }
-        if (isFinishing) {
-            Log.i(TAG,"Activity onPause() - isFinishing == true")
-        }
-        Log.i(TAG,"Activity onPause() - just this log")
+        } else
+            Log.i(TAG,"Activity onPause() doing nothing if SDK_INT > 23")
+
+//        if (isFinishing) {
+//            Log.i(TAG,"Activity onPause() - isFinishing == true")
+//        }
+
     }
 
-    @androidx.media3.common.util.UnstableApi
     public override fun onStop() {
         super.onStop()
 
@@ -352,15 +394,25 @@ private const val TAG = "PlayerActivity"
             //releaseController()
             //PlaybackService.stop(this)
             Log.i(TAG,"Activity onStop() - releaseController() & MediaController.releaseFuture()")
-        }
+        } else
+            Log.i(TAG,"Activity onStop() - doing nothing if SDK_INT > 23")
     }
 
-    @androidx.media3.common.util.UnstableApi
+//    fun exitOnBackPressed() {
+//        Log.i(TAG,"Activity exitOnBackPressed() - trying to override onDestroy()")
+//    }
+
     public override fun onDestroy() {
         //stopService(Intent(this@PlayerActivity, PlaybackService::class.java))
         Log.i(TAG,"Activity onDestroy()")
-        writeLogCat(this@PlayerActivity)
-        PlaybackService.stop(this)
+        try {
+            writeLogCat(this@PlayerActivity)
+        } catch (e: Exception)
+        {
+            Log.e(TAG, "Exception thrown in writeLogCat")
+        }
+
+        //PlaybackService.stop(this)
 
         super.onDestroy()
     }
