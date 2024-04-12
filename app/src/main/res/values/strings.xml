@@ -30,4 +30,7 @@
     <string name="storage_access_required">Storage Access requires</string>
     <string name="storage_permission_denied">PERMISSION DENIED</string>
     <string name="loadingAudio">Getting Audio files</string>
+
+    <string name="start_player">Start</string>
+    <string name="stop_player">Stop</string>
 </resources>
