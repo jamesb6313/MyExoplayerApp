@@ -8,22 +8,18 @@ import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Binder
-import android.os.Bundle
-import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.TaskStackBuilder
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
-import androidx.media3.session.SessionCommand
-import kotlin.system.exitProcess
 
 private const val TAG = "myInfo"
 @androidx.media3.common.util.UnstableApi
@@ -34,31 +30,23 @@ class PlaybackService : MediaSessionService() {
     private var mediaItemIndex = 0
     private var playbackPosition = 0L
 
-    // Create
-    // Binder given to clients
-    //private val iBinder: IBinder = LocalBinder()
-
     companion object {
-//        private const val CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_ON =
-//            "android.media3.session.demo.SHUFFLE_ON"
-//        private const val CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_OFF =
-//            "android.media3.session.demo.SHUFFLE_OFF"
         private const val NOTIFICATION_ID = 123
         private const val CHANNEL_ID = "demo_session_notification_channel_id"
         private const val IMMUTABLE_FLAG = FLAG_IMMUTABLE
 
         private var running = false
 
-//        @JvmStatic
-//        fun start(context: Context) {
-//            Log.i(TAG, "PlaybackService companion object start()" )
-//            context.startService(Intent(context, PlaybackService::class.java))
-//        }
-
         @JvmStatic
         fun stop(context: Context) {
-            Log.i(TAG, "PlaybackService companion object stop()" )
+            Log.i(TAG, "SERVICE - PlaybackService companion Call to stop()" )
+            running = false
             context.stopService(Intent(context, PlaybackService::class.java))
+        }
+        @JvmStatic
+        fun serviceIsRunning() : Boolean {
+            Log.i(TAG, "PlaybackService companion object SERVICE RUNNING = $running")
+            return running
         }
     }
 
@@ -67,25 +55,6 @@ class PlaybackService : MediaSessionService() {
     // If desired, validate the controller before returning the media session
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
         mediaSession
-
-    // Create your Player and MediaSession in the onCreate lifecycle event
-    override fun onCreate() {
-        super.onCreate()
-        //start(this)
-        running = true
-
-//        customCommands =
-//            listOf(
-//                getShuffleCommandButton(
-//                    SessionCommand(CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_ON, Bundle.EMPTY)
-//                ),
-//                getShuffleCommandButton(
-//                    SessionCommand(CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_OFF, Bundle.EMPTY)
-//                )
-//            )
-        initializeSessionAndPlayer()
-        setListener(serviceListener())
-    }
 
     private fun ensureNotificationChannel(notificationManagerCompat: NotificationManagerCompat) {
         if (Util.SDK_INT < 26 || notificationManagerCompat.getNotificationChannel(CHANNEL_ID) != null) {
@@ -99,6 +68,19 @@ class PlaybackService : MediaSessionService() {
                 NotificationManager.IMPORTANCE_DEFAULT
             )
         notificationManagerCompat.createNotificationChannel(channel)
+    }
+
+    // Create your Player and MediaSession in the onCreate lifecycle event
+    override fun onCreate() {
+        super.onCreate()
+        //start(this)
+        running = true
+        Log.i(TAG,"SERVICE - onCreate()")
+
+        initializeSessionAndPlayer()    // assign player = ExoPlayer... & mediaSession
+        setListener(serviceListener())
+
+        Log.i(TAG,"SERVICE onCreate() - PlaybackService running = $running ")
     }
 
     private fun serviceListener() = object : Listener {
@@ -128,6 +110,8 @@ class PlaybackService : MediaSessionService() {
         }
     }
 
+    // assign player = ExoPlayer... & mediaSession
+    // populate MediaItems
     private fun initializeSessionAndPlayer() {    //(songs : ArrayList<AudioSongs>) {
         val sList : MutableList<MediaItem> = ArrayList()
 
@@ -142,6 +126,7 @@ class PlaybackService : MediaSessionService() {
 
         player = ExoPlayer.Builder(this)
             .setAudioAttributes(AudioAttributes.DEFAULT, /* handleAudioFocus */ true)
+            .setHandleAudioBecomingNoisy(true)
             .build()
             .also { exoPlayer ->
                 exoPlayer.setMediaItems(sList, mediaItemIndex, playbackPosition)
@@ -149,40 +134,23 @@ class PlaybackService : MediaSessionService() {
         mediaSession = MediaSession.Builder(this, player).build()
     }
 
-//    private fun getShuffleCommandButton(sessionCommand: SessionCommand): CommandButton {
-//        val isOn = sessionCommand.customAction == CUSTOM_COMMAND_TOGGLE_SHUFFLE_MODE_ON
-//        return CommandButton.Builder()
-//            .setDisplayName(
-//                getString(
-//                    if (isOn) R.string.exo_controls_shuffle_on_description
-//                    else R.string.exo_controls_shuffle_off_description
-//                )
-//            )
-//            .setSessionCommand(sessionCommand)
-//            .build()
-//    }
-
-//    inner class LocalBinder : Binder() {
-//        //val service: PlaybackService
-//        //    get() = this@PlaybackService
-//        fun getService(): PlaybackService = this@PlaybackService
-//    }
-
-//    override fun onBind(intent: Intent?): IBinder {
-//        super.onBind(intent)
-//        return iBinder
-//    }
-
-    // This seems to allow Service OnDestroy() only if onTaskedRemoved() is called - 3-29-2024
-    // which is what I want
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        super.onStartCommand(intent, flags, startId)
-        //Service.startForeground(0, notification, FOREGROUND_SERVICE_TYPE)
-        Log.i(TAG, "onStartCommand() - return START_STICKY")
-        return START_STICKY
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        val player = mediaSession?.player!!
+        if (player.playWhenReady
+            || player.mediaItemCount == 0
+            || player.playbackState == Player.STATE_ENDED)
+        {
+            stopSelf()
+            Log.i(TAG, "onTaskRemoved() test player state satisfied - call stopSelf()")
+        }
+        else
+            Log.i(TAG, "onTaskRemoved() test player state NOT SATISFIED - DO NOT call stopSelf()")
     }
 
-    override fun onTaskRemoved(rootIntent: Intent?) {
+    // Remember to release the player and media session in onDestroy - does no get called
+    override fun onDestroy() {
+        super.onDestroy()
+        running = false
 
         try {
             mediaSession?.run {
@@ -190,32 +158,10 @@ class PlaybackService : MediaSessionService() {
                 release()
                 mediaSession = null
             }
-            Log.i(TAG, "onTaskRemoved() Media Service has been released.")
-        } finally {
-            stopSelf()
-            Log.i(TAG, "onTaskRemoved() call stopSelf()")
-
-            super.onTaskRemoved(rootIntent)
-
-            // try exit in onDestroy() - might not even need it now with START_STICK
-//            Log.i(TAG, "onTaskRemoved() call to exitProcess(-1) will be made")
-//            exitProcess(-1)
-
-        }
-    }
-
-    // Remember to release the player and media session in onDestroy - does no get called
-    override fun onDestroy() {
-        super.onDestroy()
-        running = false
-        stop(this)
-
-        try {
-            Log.i(TAG, "OnDestroy() - running = false")
+            Log.i(TAG, "SERVICE - onDestroy() Media Service has been released.")
         } finally {
             super.onDestroy()
-            Log.i(TAG, "OnDestroy() call to exitProcess(-1) will be made")
-            exitProcess(-1)
+            Log.i(TAG, "SERVICE - OnDestroy() call super.onDestroy()")
         }
     }
 }

@@ -34,18 +34,20 @@
 
         <Button
             android:id="@+id/startPlayerBTN"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
             style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:background="#FFEB3B"
             android:text="@string/start_player" />
 
         <Button
             android:id="@+id/stopPlayerBTN"
             style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="0dp"
+            android:layout_width="300dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:background="#FFEB3B"
             android:text="@string/stop_player" />
     </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>

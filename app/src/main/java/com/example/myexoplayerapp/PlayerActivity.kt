@@ -1,24 +1,20 @@
 package com.example.myexoplayerapp
 
+//SEE: https://developer.android.com/media/implement/playback-app - CREATING BASIC EXOPLAYER
+//     https://developer.android.com/media/media3/session/background-playback - Background specific code
 
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.ComponentName
-import android.content.Context
 import android.content.DialogInterface
-import android.content.Intent
-import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Binder
 import android.os.Build
 import android.os.Bundle
-import android.os.IBinder
 import android.provider.MediaStore
 import android.util.Log
-import android.window.OnBackInvokedDispatcher
-import androidx.activity.OnBackPressedCallback
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -33,15 +29,14 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import androidx.media3.ui.PlayerView
 import com.example.myexoplayerapp.databinding.ActivityPlayerBinding
-import com.google.android.material.snackbar.Snackbar
-import com.google.common.util.concurrent.ListenableFuture
-import com.google.common.util.concurrent.MoreExecutors
-
+import com.example.myexoplayerapp.util.LogDump.Companion.writeLogCat
 import com.example.myexoplayerapp.util.checkPermission
 import com.example.myexoplayerapp.util.requestAllPermissions
 import com.example.myexoplayerapp.util.shouldRequestPermissionRationale
-import com.example.myexoplayerapp.util.showSnackbar
-import com.example.myexoplayerapp.util.LogDump.Companion.writeLogCat
+//import com.example.myexoplayerapp.util.showSnackbar
+import com.google.android.material.snackbar.Snackbar
+import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.MoreExecutors
 
 /**
  * A fullscreen activity to play audio or video streams.
@@ -56,8 +51,6 @@ private const val TAG = "myInfo"
     private lateinit var playerView: PlayerView
     private var myMsgResult = false
     private lateinit var sessionToken : SessionToken
-//    private lateinit var mService : PlaybackService
-//    private var mBound : Boolean = false
 
     companion object {
         const val PERMISSION_REQUEST_STORAGE = 0
@@ -75,22 +68,6 @@ private const val TAG = "myInfo"
         ActivityPlayerBinding.inflate(layoutInflater)
     }
 
-    /** Defines callbacks for service binding, passed to bindService().  */
-    //SEE: https://developer.android.com/develop/background-work/services/bound-services#Basics
-//    private val connection = object : ServiceConnection {
-//
-//        override fun onServiceConnected(className: ComponentName, service: IBinder) {
-//            // We've bound to LocalService, cast the IBinder and get LocalService instance.
-//            val binder = service as PlaybackService.LocalBinder
-//            mService = binder.getService()
-//            mBound = true
-//        }
-//
-//        override fun onServiceDisconnected(arg0: ComponentName) {
-//            mBound = false
-//        }
-//    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(viewBinding.container)       //changed from .root
@@ -105,11 +82,10 @@ private const val TAG = "myInfo"
             // Permission is already granted
             startDownloading()
         } else {
-            //Requested permission.
+            // Requested permission.
             // Permission has not been granted and must be requested.
             requestStoragePermission()
         }
-        //PlaybackService.LocalBinder = bindService()
 
         //SEE:https://stackoverflow.com/questions/72634225/onbackpressed-is-deprecated-what-is-the-alternative
 //        if (Build.VERSION.SDK_INT >= 33) {
@@ -144,7 +120,10 @@ private const val TAG = "myInfo"
                 startDownloading()
             } else {
                 // Permission request was denied.
-                viewBinding.container.showSnackbar(R.string.storage_permission_denied, Snackbar.LENGTH_SHORT)
+                Snackbar.make(viewBinding.container,R.string.storage_permission_denied,Snackbar.LENGTH_LONG)
+                    .show()
+
+                //viewBinding.container.showSnackbar(R.string.storage_permission_denied, Snackbar.LENGTH_SHORT)
             }
         }
     }
@@ -153,12 +132,20 @@ private const val TAG = "myInfo"
         // Permission has not been granted and must be requested.
         if (shouldRequestPermissionRationale(Manifest.permission.READ_MEDIA_AUDIO)) {
             // Provide an additional rationale to the user if the permission was not granted
-            viewBinding.container.showSnackbar(
-                R.string.storage_access_required,
-                Snackbar.LENGTH_INDEFINITE, R.string.ok
-            ) {
+            val sb = Snackbar.make(viewBinding.container,R.string.storage_access_required,Snackbar.LENGTH_INDEFINITE)
+            sb.setAction(R.string.ok, View.OnClickListener {
+                // executed when DISMISS is clicked
                 requestAllPermissions(permissions, PERMISSION_REQUEST_STORAGE)
-            }
+                //println("Snackbar Set Action - OnClick.")
+            })
+            sb.show()
+
+//            viewBinding.container.showSnackbar(
+//                R.string.storage_access_required,
+//                Snackbar.LENGTH_INDEFINITE, R.string.ok
+//            ) {
+//                requestAllPermissions(permissions, PERMISSION_REQUEST_STORAGE)
+//            }
         } else {
             // Request the permission with array.
             requestAllPermissions(permissions, PERMISSION_REQUEST_STORAGE)
@@ -173,7 +160,18 @@ private const val TAG = "myInfo"
             Log.i(TAG, "startDownLoading - loadAudio() called, audioList == null")
 
         loadAudio()
-        viewBinding.container.showSnackbar(R.string.loadingAudio, Snackbar.LENGTH_LONG)
+
+        Log.i(TAG, "loadAudio() called, audioList.count() = " + audioList!!.count())
+
+        // See: https://www.tutorialkart.com/kotlin-android/android-snackbar-set-action-example/#gsc.tab=0
+            val sb = Snackbar.make(viewBinding.container,R.string.loadingAudio,Snackbar.LENGTH_LONG)
+            sb.setAction("DISMISS") {
+                // executed when DISMISS is clicked
+                println("Snackbar Set Action - OnClick.")
+            }
+        sb.show()
+
+        //viewBinding.container.showSnackbar(R.string.loadingAudio, Snackbar.LENGTH_LONG)
     }
 
     @SuppressLint("Range")
@@ -211,7 +209,7 @@ private const val TAG = "myInfo"
 
                 //Log.i("SONG data = ", data)     // example data string :"/storage/emulated/0/Music/**.mp3"
                 // Save to audioList
-                audioList!!.add(AudioSongs(data, title, album, artist))
+                audioList!!.add(AudioSongs(data))
             }
             audioList!!.shuffle()
         }
@@ -291,8 +289,6 @@ private const val TAG = "myInfo"
 
         playerView.player = controller
 
-        //playerView.setShowSubtitleButton(controller.currentTracks.isTypeSupported(TRACK_TYPE_TEXT))
-
         controller.addListener(
             object : Player.Listener {
                 override fun onTracksChanged(tracks: Tracks) {
@@ -322,12 +318,11 @@ private const val TAG = "myInfo"
         }
     }
 
-    public override fun  onStart() {
+    public override fun onStart() {
         super.onStart()
-//        // Bind to PlaybackService
-//        Intent(this, PlaybackService::class.java).also { intent ->
-//            bindService(intent, connection, Context.BIND_AUTO_CREATE)
-//        }
+
+        val testRunning = PlaybackService.serviceIsRunning()
+        Log.i(TAG,"Activity onStart() - PlaybackService running = $testRunning ")
 
         if (Util.SDK_INT > 23) {
             if (audioList != null && audioList!!.isNotEmpty()) {
@@ -345,6 +340,9 @@ private const val TAG = "myInfo"
                 }
                 if (audioList!!.isEmpty())
                 {
+                    // When Permission is first granted - need to loadAudio files here
+                    startDownloading()
+
                     initializeMediaList()
                     sessionToken = SessionToken(this,ComponentName(this, PlaybackService::class.java))
                     initializeController()
@@ -365,8 +363,12 @@ private const val TAG = "myInfo"
             initializeController()
 
             Log.i(TAG,"Activity onResume() controller re-initialize")
-        } else
+        } else {
+            val testRunning = PlaybackService.serviceIsRunning()
+            Log.i(TAG,"Activity onResume() - PlaybackService running = $testRunning ")
+
             Log.i(TAG,"Activity onResume() doing nothing if SDK_INT > 23")
+        }
     }
 
     public override fun onPause() {
@@ -387,13 +389,16 @@ private const val TAG = "myInfo"
     public override fun onStop() {
         super.onStop()
 
-//        unbindService(connection)
-//        mBound = false
 
         if (Util.SDK_INT > 23) {
             //releaseController()
             //PlaybackService.stop(this)
             Log.i(TAG,"Activity onStop() - releaseController() & MediaController.releaseFuture()")
+
+            var testRunning = PlaybackService.serviceIsRunning()
+            if (testRunning) PlaybackService.stop(this@PlayerActivity)
+            testRunning = PlaybackService.serviceIsRunning()
+            Log.i(TAG,"Activity onStop() - PlaybackService running = $testRunning ")
         } else
             Log.i(TAG,"Activity onStop() - doing nothing if SDK_INT > 23")
     }
@@ -406,6 +411,8 @@ private const val TAG = "myInfo"
         //stopService(Intent(this@PlayerActivity, PlaybackService::class.java))
         Log.i(TAG,"Activity onDestroy()")
         try {
+            val testRunning = PlaybackService.serviceIsRunning()
+            Log.i(TAG,"Activity onDestroy() - PlaybackService running = $testRunning ")
             writeLogCat(this@PlayerActivity)
         } catch (e: Exception)
         {
