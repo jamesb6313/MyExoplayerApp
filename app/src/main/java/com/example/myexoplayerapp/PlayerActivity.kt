@@ -11,7 +11,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.C.TRACK_TYPE_TEXT
 import androidx.media3.common.MediaItem
@@ -102,10 +101,10 @@ private const val TAG = "myInfo"
         if (shouldRequestPermissionRationale(Manifest.permission.READ_MEDIA_AUDIO)) {
             // Provide an additional rationale to the user if the permission was not granted
             val sb = Snackbar.make(viewBinding.container,R.string.storage_access_required,Snackbar.LENGTH_INDEFINITE)
-            sb.setAction(R.string.ok, View.OnClickListener {
+            sb.setAction(R.string.ok) {
                 // executed when DISMISS is clicked
                 requestAllPermissions(permissions, PERMISSION_REQUEST_STORAGE)
-            })
+            }
             sb.show()
         } else {
             // Request the permission with array.
