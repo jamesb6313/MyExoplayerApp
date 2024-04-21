@@ -17,7 +17,6 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 
@@ -26,7 +25,7 @@ private const val TAG = "myInfo"
 class PlaybackService : MediaSessionService() {
 
     private lateinit var player: ExoPlayer
-    private lateinit var customCommands: List<CommandButton>
+//    private lateinit var customCommands: List<CommandButton>
     private var mediaItemIndex = 0
     private var playbackPosition = 0L
 
@@ -90,7 +89,6 @@ class PlaybackService : MediaSessionService() {
             val notificationManagerCompat = NotificationManagerCompat.from(this@PlaybackService)
             ensureNotificationChannel(notificationManagerCompat)
 
-            //TODO - this looks like were some of my errors/crashes are occurring
             val pendingIntent =
                 TaskStackBuilder.create(this@PlaybackService).run {
                     addNextIntent(Intent(this@PlaybackService, PlayerActivity::class.java))

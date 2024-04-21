@@ -5,20 +5,14 @@ package com.example.myexoplayerapp
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.ComponentName
-import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.C.TRACK_TYPE_TEXT
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -33,7 +27,6 @@ import com.example.myexoplayerapp.util.LogDump.Companion.writeLogCat
 import com.example.myexoplayerapp.util.checkPermission
 import com.example.myexoplayerapp.util.requestAllPermissions
 import com.example.myexoplayerapp.util.shouldRequestPermissionRationale
-//import com.example.myexoplayerapp.util.showSnackbar
 import com.google.android.material.snackbar.Snackbar
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
@@ -49,19 +42,15 @@ private const val TAG = "myInfo"
         get() = if (controllerFuture.isDone) controllerFuture.get() else null
 
     private lateinit var playerView: PlayerView
-    private var myMsgResult = false
+//    private var myMsgResult = false
     private lateinit var sessionToken : SessionToken
 
     companion object {
         const val PERMISSION_REQUEST_STORAGE = 0
     }
 
-    private val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            arrayOf(Manifest.permission.READ_MEDIA_AUDIO)
-        } else {
-            Log.i(TAG,"permission value if < TIRAMISU not dealt with")
-            TODO("VERSION.SDK_INT < TIRAMISU")
-    }
+    private val permissions =
+        arrayOf(Manifest.permission.READ_MEDIA_AUDIO)
 
     private val viewBinding by lazy(LazyThreadSafetyMode.NONE) {
         Log.i(TAG,"viewBinding - lazy call layout inflater")
@@ -76,7 +65,7 @@ private const val TAG = "myInfo"
 
         audioList = ArrayList()
 
-        //requestPermission()
+        // requestPermission()
         // Check if the storage permission has been granted
         if (checkPermission(Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             // Permission is already granted
@@ -86,26 +75,6 @@ private const val TAG = "myInfo"
             // Permission has not been granted and must be requested.
             requestStoragePermission()
         }
-
-        //SEE:https://stackoverflow.com/questions/72634225/onbackpressed-is-deprecated-what-is-the-alternative
-//        if (Build.VERSION.SDK_INT >= 33) {
-//            onBackInvokedDispatcher.registerOnBackInvokedCallback(
-//                OnBackInvokedDispatcher.PRIORITY_DEFAULT
-//            ) {
-//                exitOnBackPressed()
-//            }
-//        } else {
-//            onBackPressedDispatcher.addCallback(
-//                this,
-//                object : OnBackPressedCallback(true) {
-//                    override fun handleOnBackPressed() {
-//
-//                        Log.i(TAG, "handleOnBackPressed: Exit")
-//                        exitOnBackPressed()
-//                    }
-//                })
-//        }
-
     }
 
     override fun onRequestPermissionsResult(
@@ -136,16 +105,8 @@ private const val TAG = "myInfo"
             sb.setAction(R.string.ok, View.OnClickListener {
                 // executed when DISMISS is clicked
                 requestAllPermissions(permissions, PERMISSION_REQUEST_STORAGE)
-                //println("Snackbar Set Action - OnClick.")
             })
             sb.show()
-
-//            viewBinding.container.showSnackbar(
-//                R.string.storage_access_required,
-//                Snackbar.LENGTH_INDEFINITE, R.string.ok
-//            ) {
-//                requestAllPermissions(permissions, PERMISSION_REQUEST_STORAGE)
-//            }
         } else {
             // Request the permission with array.
             requestAllPermissions(permissions, PERMISSION_REQUEST_STORAGE)
@@ -164,14 +125,12 @@ private const val TAG = "myInfo"
         Log.i(TAG, "loadAudio() called, audioList.count() = " + audioList!!.count())
 
         // See: https://www.tutorialkart.com/kotlin-android/android-snackbar-set-action-example/#gsc.tab=0
-            val sb = Snackbar.make(viewBinding.container,R.string.loadingAudio,Snackbar.LENGTH_LONG)
-            sb.setAction("DISMISS") {
-                // executed when DISMISS is clicked
-                println("Snackbar Set Action - OnClick.")
-            }
+        val sb = Snackbar.make(viewBinding.container,R.string.loadingAudio,Snackbar.LENGTH_LONG)
+//        sb.setAction("DISMISS") {
+//            // executed when DISMISS is clicked
+//            println("Snackbar Set Action - OnClick.")
+//        }
         sb.show()
-
-        //viewBinding.container.showSnackbar(R.string.loadingAudio, Snackbar.LENGTH_LONG)
     }
 
     @SuppressLint("Range")
@@ -200,12 +159,12 @@ private const val TAG = "myInfo"
             while (cursor.moveToNext()) {
                 val data =
                     cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA))
-                val title =
-                    cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE))
-                val album =
-                    cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM))
-                val artist =
-                    cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST))
+//                val title =
+//                    cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE))
+//                val album =
+//                    cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM))
+//                val artist =
+//                    cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST))
 
                 //Log.i("SONG data = ", data)     // example data string :"/storage/emulated/0/Music/**.mp3"
                 // Save to audioList
@@ -221,39 +180,41 @@ private const val TAG = "myInfo"
         return songCount
     }
 
-    private fun myShowErrorDlg(errMsg: String) {
-        // build alert dialog
-        val dialogBuilder = AlertDialog.Builder(this)
-
-        // set message of alert dialog
-        dialogBuilder.setMessage(errMsg)
-            // if the dialog is cancelable
-            .setCancelable(false)
-            // positive button text and action
-            .setPositiveButton("Grant permission", DialogInterface.OnClickListener {
-                    _, _ ->
-                myMsgResult = true//finish()
-            })
-            // negative button text and action
-            .setNegativeButton("Deny Access", DialogInterface.OnClickListener {
-                    dialog, id ->
-                myMsgResult = false
-                //dialog.cancel()
-            })
-
-        // create dialog box
-        val alert = dialogBuilder.create()
-        // set title for alert dialog box
-        alert.setTitle("Application needs permission to access Music Folder")
-        // show alert dialog
-        alert.show()
-    }
+//    private fun myShowErrorDlg(errMsg: String) {
+//        // build alert dialog
+//        val dialogBuilder = AlertDialog.Builder(this)
+//
+//        // set message of alert dialog
+//        dialogBuilder.setMessage(errMsg)
+//            // if the dialog is cancelable
+//            .setCancelable(false)
+//            // positive button text and action
+//            .setPositiveButton("Grant permission", DialogInterface.OnClickListener {
+//                    _, _ ->
+//                myMsgResult = true//finish()
+//            })
+//            // negative button text and action
+//            .setNegativeButton("Deny Access", DialogInterface.OnClickListener {
+//                    dialog, id ->
+//                myMsgResult = false
+//                //dialog.cancel()
+//            })
+//
+//        // create dialog box
+//        val alert = dialogBuilder.create()
+//        // set title for alert dialog box
+//        alert.setTitle("Application needs permission to access Music Folder")
+//        // show alert dialog
+//        alert.show()
+//    }
 
     private fun loadAudio() {
         try {
             myNewGetAudioFileCount()
         } catch (e: Exception) {
-            myShowErrorDlg("Error = " + e.message)
+            val sb = Snackbar.make(viewBinding.container,"Error = ${e.message}",Snackbar.LENGTH_LONG)
+            sb.show()
+            //myShowErrorDlg("Error = " + e.message)
             // Cannot use Toast in catch stmt - Toast.makeText(this, " Error = " + e.message, Toast.LENGTH_SHORT).show()
         }
     }
@@ -280,9 +241,9 @@ private const val TAG = "myInfo"
         controllerFuture.addListener({ setController() }, MoreExecutors.directExecutor())
     }
 
-    private fun releaseController() {
-        MediaController.releaseFuture(controllerFuture)
-    }
+//    private fun releaseController() {
+//        MediaController.releaseFuture(controllerFuture)
+//    }
 
     private fun setController() {
         val controller = this.controller ?: return
@@ -309,14 +270,14 @@ private const val TAG = "myInfo"
         )
     }
 
-    @SuppressLint("InlinedApi")
-    private fun hideSystemUi() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        WindowInsetsControllerCompat(window, viewBinding.videoView).let { controller ->
-            controller.hide(WindowInsetsCompat.Type.systemBars())
-            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
-    }
+//    @SuppressLint("InlinedApi")
+//    private fun hideSystemUi() {
+//        WindowCompat.setDecorFitsSystemWindows(window, false)
+//        WindowInsetsControllerCompat(window, viewBinding.videoView).let { controller ->
+//            controller.hide(WindowInsetsCompat.Type.systemBars())
+//            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+//        }
+//    }
 
     public override fun onStart() {
         super.onStart()
@@ -358,27 +319,25 @@ private const val TAG = "myInfo"
     public override fun onResume() {
         super.onResume()
         //hideSystemUi()
-        if (Util.SDK_INT <= 23 ) {
-            sessionToken = SessionToken(this,ComponentName(this, PlaybackService::class.java))  //added
-            initializeController()
-
-            Log.i(TAG,"Activity onResume() controller re-initialize")
-        } else {
-            val testRunning = PlaybackService.serviceIsRunning()
-            Log.i(TAG,"Activity onResume() - PlaybackService running = $testRunning ")
-
-            Log.i(TAG,"Activity onResume() doing nothing if SDK_INT > 23")
-        }
+//        if (Util.SDK_INT <= 23 ) {
+//            sessionToken = SessionToken(this,ComponentName(this, PlaybackService::class.java))  //added
+//            initializeController()
+//
+//            Log.i(TAG,"Activity onResume() controller re-initialize")
+//        } else {
+        val testRunning = PlaybackService.serviceIsRunning()
+        Log.i(TAG,"Activity onResume() - do nothing just show PlaybackService running = $testRunning ")
+//        }
     }
 
     public override fun onPause() {
         super.onPause()
-        if (Util.SDK_INT <= 23) {
-            releaseController()
-
-            Log.i(TAG,"Activity onPause() - release controller,  SDK <= 23")
-        } else
-            Log.i(TAG,"Activity onPause() doing nothing if SDK_INT > 23")
+//        if (Util.SDK_INT <= 23) {
+//            releaseController()
+//
+//            Log.i(TAG,"Activity onPause() - release controller,  SDK <= 23")
+//        } else
+        Log.i(TAG,"Activity onPause() - doing nothing if SDK_INT > 23")
 
 //        if (isFinishing) {
 //            Log.i(TAG,"Activity onPause() - isFinishing == true")
@@ -390,17 +349,17 @@ private const val TAG = "myInfo"
         super.onStop()
 
 
-        if (Util.SDK_INT > 23) {
-            //releaseController()
-            //PlaybackService.stop(this)
-            Log.i(TAG,"Activity onStop() - releaseController() & MediaController.releaseFuture()")
+//        if (Util.SDK_INT > 23) {
+        //releaseController()             // this needs to be commented out
+        //PlaybackService.stop(this)
+        Log.i(TAG,"Activity onStop() - releaseController() & MediaController.releaseFuture()")
 
-            var testRunning = PlaybackService.serviceIsRunning()
-            if (testRunning) PlaybackService.stop(this@PlayerActivity)
-            testRunning = PlaybackService.serviceIsRunning()
-            Log.i(TAG,"Activity onStop() - PlaybackService running = $testRunning ")
-        } else
-            Log.i(TAG,"Activity onStop() - doing nothing if SDK_INT > 23")
+        var testRunning = PlaybackService.serviceIsRunning()
+        if (testRunning) PlaybackService.stop(this@PlayerActivity)
+        testRunning = PlaybackService.serviceIsRunning()
+        Log.i(TAG,"Activity onStop() - PlaybackService running = $testRunning ")
+//        } else
+//            Log.i(TAG,"Activity onStop() - doing nothing if SDK_INT > 23")
     }
 
 //    fun exitOnBackPressed() {
